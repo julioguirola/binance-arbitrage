@@ -185,8 +185,8 @@ async fn evaluate(trios: Vec<(Symbol, Symbol, Symbol)>) {
                         b3.data.symbol,
                         calculate_rate(
                             (*s1_locked).clone(),
-                            (*s1_locked).clone(),
-                            (*s1_locked).clone()
+                            (*s2_locked).clone(),
+                            (*s3_locked).clone()
                         )
                     );
                 }
