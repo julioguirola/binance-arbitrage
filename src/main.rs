@@ -56,6 +56,8 @@ fn detect_trios(symbols: &[Symbol]) -> Vec<(Symbol, Symbol, Symbol)> {
         })
         .collect();
     let mut symbols_ok: Vec<(Symbol, Symbol, Symbol)> = vec![];
+    let mut seen: std::collections::HashSet<(String, String, String)> =
+        std::collections::HashSet::new();
     println!("Symbols filtrados: {}", symbols_filtrados.len());
     let mut count = 0;
     for s1 in &symbols_filtrados {
@@ -64,39 +66,50 @@ fn detect_trios(symbols: &[Symbol]) -> Vec<(Symbol, Symbol, Symbol)> {
                 if s1.symbol == s3.symbol || s1.symbol == s2.symbol {
                     continue;
                 }
+                let mut trio_symbols = [s1.symbol.as_str(), s2.symbol.as_str(), s3.symbol.as_str()];
+                trio_symbols.sort();
+                let key = (
+                    trio_symbols[0].to_string(),
+                    trio_symbols[1].to_string(),
+                    trio_symbols[2].to_string(),
+                );
+                if seen.contains(&key) {
+                    continue;
+                }
+
+                let mut add = false;
                 if s1.base_asset == s2.base_asset
                     && (s2.quote_asset == s3.base_asset || s2.quote_asset == s3.quote_asset)
                     && (s3.base_asset == s1.quote_asset || s3.quote_asset == s1.quote_asset)
                 {
-                    println!("{} {} {}", s1.symbol, s2.symbol, s3.symbol);
-                    count += 1;
-                    symbols_ok.push(((**s1).clone(), (**s2).clone(), (**s3).clone()));
+                    add = true;
                 }
 
                 if s1.base_asset == s2.quote_asset
                     && (s2.base_asset == s3.base_asset || s2.base_asset == s3.quote_asset)
                     && (s3.base_asset == s1.quote_asset || s3.quote_asset == s1.quote_asset)
                 {
-                    println!("{} {} {}", s1.symbol, s2.symbol, s3.symbol);
-                    count += 1;
-                    symbols_ok.push(((**s1).clone(), (**s2).clone(), (**s3).clone()));
+                    add = true;
                 }
 
                 if s1.quote_asset == s2.quote_asset
                     && (s2.base_asset == s3.base_asset || s2.base_asset == s3.quote_asset)
                     && (s3.base_asset == s1.base_asset || s3.quote_asset == s1.base_asset)
                 {
-                    println!("{} {} {}", s1.symbol, s2.symbol, s3.symbol);
-                    count += 1;
-                    symbols_ok.push(((**s1).clone(), (**s2).clone(), (**s3).clone()));
+                    add = true;
                 }
 
                 if s1.quote_asset == s2.base_asset
                     && (s2.quote_asset == s3.base_asset || s2.quote_asset == s3.quote_asset)
                     && (s3.base_asset == s1.base_asset || s3.quote_asset == s1.base_asset)
                 {
+                    add = true;
+                }
+
+                if add {
                     println!("{} {} {}", s1.symbol, s2.symbol, s3.symbol);
                     count += 1;
+                    seen.insert(key);
                     symbols_ok.push(((**s1).clone(), (**s2).clone(), (**s3).clone()));
                 }
             }
@@ -164,15 +177,17 @@ async fn evaluate(trios: Vec<(Symbol, Symbol, Symbol)>) {
                     &s1_locked.book_ticker,
                     &s2_locked.book_ticker,
                     &s3_locked.book_ticker,
-                ) && let (Ok(ask1), Ok(bid2), Ok(ask3)) = (
-                    b1.data.ask.parse::<f64>(),
-                    b2.data.bid.parse::<f64>(),
-                    b3.data.ask.parse::<f64>(),
                 ) {
-                    let rate = ask1 * (1.0 / bid2) * ask3;
                     println!(
                         "{} -> {} -> {} = {}",
-                        b1.data.symbol, b2.data.symbol, b3.data.symbol, rate
+                        b1.data.symbol,
+                        b2.data.symbol,
+                        b3.data.symbol,
+                        calculate_rate(
+                            (*s1_locked).clone(),
+                            (*s1_locked).clone(),
+                            (*s1_locked).clone()
+                        )
                     );
                 }
             }
@@ -185,3 +200,87 @@ async fn evaluate(trios: Vec<(Symbol, Symbol, Symbol)>) {
         let _ = h.await;
     }
 }
+
+fn calculate_rate(s1: Symbol, s2: Symbol, s3: Symbol) -> f64 {
+    let mut rate = 1.0;
+
+    if s1.base_asset == s2.base_asset || s1.base_asset == s2.quote_asset {
+        rate *= 1.0
+            / s1.book_ticker
+                .as_ref()
+                .unwrap()
+                .data
+                .bid
+                .parse::<f64>()
+                .unwrap();
+    } else {
+        rate *= s1
+            .book_ticker
+            .as_ref()
+            .unwrap()
+            .data
+            .ask
+            .parse::<f64>()
+            .unwrap();
+    }
+
+    if s2.base_asset == s3.base_asset || s2.base_asset == s3.quote_asset {
+        rate *= 1.0
+            / s2.book_ticker
+                .as_ref()
+                .unwrap()
+                .data
+                .bid
+                .parse::<f64>()
+                .unwrap();
+    } else {
+        rate *= s2
+            .book_ticker
+            .as_ref()
+            .unwrap()
+            .data
+            .ask
+            .parse::<f64>()
+            .unwrap();
+    }
+
+    if s3.base_asset == s1.base_asset || s3.base_asset == s1.quote_asset {
+        rate *= 1.0
+            / s3.book_ticker
+                .as_ref()
+                .unwrap()
+                .data
+                .bid
+                .parse::<f64>()
+                .unwrap();
+    } else {
+        rate *= s3
+            .book_ticker
+            .as_ref()
+            .unwrap()
+            .data
+            .ask
+            .parse::<f64>()
+            .unwrap();
+    }
+
+    rate
+}
+
+// {
+//   "u": 400900217,
+//   "s": "BNBUSDT",
+//   "b": 25.3519,
+//   "B": 31.21,
+//   "a": 25.3652,
+//   "A": 40.66
+// }
+
+//  rate *= 1.0
+//             / s1.book_ticker
+//                 .as_ref()
+//                 .unwrap()
+//                 .data
+//                 .bid
+//                 .parse::<f64>()
+//                 .unwrap();
