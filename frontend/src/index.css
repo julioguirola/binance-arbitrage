@@ -1,0 +1,75 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: #eee;
+}
+
+.app {
+  padding: 1rem;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.status.ok {
+  color: #4caf50;
+}
+
+.status.bad {
+  color: #f44336;
+}
+
+.count {
+  color: #888;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.5rem;
+}
+
+.cell {
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.6rem;
+  background: #1a1a1a;
+}
+
+.cell.profit {
+  border-color: #4caf50;
+  background: #0f2a12;
+}
+
+.route {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-bottom: 0.35rem;
+}
+
+.rate {
+  font-family: ui-monospace, monospace;
+  font-size: 1.1rem;
+}
+
+.cell.profit .rate {
+  color: #4caf50;
+}

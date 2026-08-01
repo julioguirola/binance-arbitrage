@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 pub struct ExchangeInfo {
@@ -36,3 +36,9 @@ pub struct BookTickerData {
 }
 
 pub struct BaseUrl(pub String);
+
+#[derive(Serialize, Clone, Debug)]
+pub struct TrioUpdate {
+    pub route: String,
+    pub rate: f64,
+}
